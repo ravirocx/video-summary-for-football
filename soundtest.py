@@ -2,16 +2,20 @@ from scipy.io import wavfile
 import numpy
 import matplotlib.pyplot as plt
 import math
-sampFreq, snd = wavfile.read('aud1.wav')
+from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
+
+sampFreq, snd = wavfile.read('theaudio.wav')
 print(snd.dtype)
 snd=snd/(2.**15)
 print(snd.shape)
 
-print(5990780/sampFreq)
+shape=int(snd.shape[0])
+
+print(shape/sampFreq)
 print(sampFreq)
-timeArray = numpy.arange(0, 5990780, 1)
+timeArray = numpy.arange(0, shape, 1)
 timeArray = timeArray / sampFreq
-timeArray = timeArray #*1000 #scale to milliseconds
+
 s2 = snd[:,0] 
 s2=numpy.square(s2)
 s2=numpy.square(s2)
@@ -40,6 +44,39 @@ for x in s2:
 	t=t+1
 print(array_of_time)
 print(numpy.unique(array_of_time))
+
+unique_array_of_time=numpy.unique(array_of_time)
+maxi=unique_array_of_time[-1]
+final_array=numpy.zeros(maxi+1)
+p=maxi
+r=maxi
+for x in range(10,len(unique_array_of_time)):
+	if unique_array_of_time[x]-unique_array_of_time[x-10]<=15:
+		print(unique_array_of_time[x-10],unique_array_of_time[x])
+		final_array[unique_array_of_time[x-10]]=final_array[unique_array_of_time[x-10]]+1
+		final_array[unique_array_of_time[x]]=final_array[unique_array_of_time[x]]-1
+for x in range(1,maxi+1):
+	final_array[x]=final_array[x]+final_array[x-1]
+
+print(final_array)
+final_ans=numpy.array(0)
+
+for x in range(0,maxi+1):
+	if final_array[x]>0:
+		p=min(x,p)
+	elif final_array[x]==0 and p!=maxi:
+		r=min(x,r)
+		final_ans=numpy.append(final_ans,p)
+		final_ans=numpy.append(final_ans,r)
+		p=maxi
+		r=maxi
+ffmpeg_extract_subclip("video.mkv", 10, 50, targetname="test.mp4")
+print(final_ans)
+for x in range(1,len(final_ans)):
+	ffmpeg_extract_subclip("video.mkv", final_ans[x]+15, final_ans[x+1]+10, targetname="test.mp4")
+	x=x+2
+	
+
 """n = len(s1) 
 p = numpy.fft.fft(s1) # take the fourier transform 
 nUniquePts = int(math.ceil((n+1)/2.0))
